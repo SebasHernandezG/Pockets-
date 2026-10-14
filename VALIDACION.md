@@ -12,6 +12,7 @@ Se comprobó la interfaz construida con datos ficticios; la web comienza sin dat
 - Revisión de interfaz: dirección visual aprobada conservada; contraste de placeholders corregido a más de 4.5:1.
 - Modo oscuro: teclado Enter/Espacio, foco conservado, `aria-pressed`, preferencia persistente, preferencia del sistema y encabezado a 320px.
 - Auditoría automatizada axe: sin violaciones en las vistas y formularios probados en claro y oscuro, reglas WCAG 2 A/AA y 2.1 AA. Se espera al final de las transiciones antes de medir.
+- Revisión de seguridad: cabeceras equivalentes en Vercel/Netlify y el paquete estático, scripts inline bloqueados, texto de respaldo malicioso escapado, PDF y tema bajo CSP, y guardado pendiente rechazado cuando otra pestaña modifica los datos. Resumen y límites en `REVISION_SEGURIDAD.md`.
 
 ## Repetir las verificaciones
 
@@ -25,5 +26,7 @@ Para el flujo en navegador, abre `npm run dev -- --port 5173` en otra terminal y
 Para probar la compilación, abre `npm run preview -- --port 4173` y ejecuta `node tests/production.mjs`. Puede usarse `POCKETS_TEST_URL` para otra URL. Ese script crea datos de prueba en una sesión aislada del navegador.
 
 Para modo oscuro y accesibilidad automatizada, con el servidor de desarrollo en 5173, ejecuta `npm run test:theme`.
+
+Después de compilar, `npm run test:security` inicia su propio servidor temporal con las cabeceras declaradas para Vercel. Las pruebas generales y de tema aceptan `POCKETS_TEST_URL` para usar otro puerto del servidor de desarrollo.
 
 Estas verificaciones cubren Chrome de escritorio y tamaños móviles emulados. No sustituyen pruebas físicas en iOS/Android ni una evaluación completa con lectores de pantalla.

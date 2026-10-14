@@ -9,12 +9,17 @@ export const CATEGORIES = [
 ];
 export const STORAGE_KEY = 'colones.records.v1';
 export const MAX_AMOUNT = 999999999.99;
+export const MAX_PERIODS = 500;
+export const MAX_EXPENSES = 10000;
+export const MAX_BACKUP_BYTES = 2000000;
+const validId = id => typeof id === 'string' && /^[A-Za-z0-9_-]{1,100}$/.test(id);
 export const money = value => new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC', maximumFractionDigits: 2 }).format(value);
 export const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Costa_Rica', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 export const monthLabel = date => new Intl.DateTimeFormat('es-CR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
 export const dateLabel = date => new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
 export const cents = value => Math.round(Number(value) * 100);
 export function amount(value) {
+  if ((typeof value !== 'number' && typeof value !== 'string') || (typeof value === 'string' && !/^\d+(?:\.\d{1,2})?$/.test(value.trim()))) throw new Error('Escribe un monto numérico válido.');
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0 || n > MAX_AMOUNT || Math.abs(n * 100 - Math.round(n * 100)) > .0001) throw new Error('Escribe un monto mayor a cero, con máximo dos decimales.');
   return cents(n) / 100;
@@ -40,16 +45,19 @@ export function addExpense(period, data, id = crypto.randomUUID()) {
   return { id, category: data.category, amount: amount(data.amount), date: data.date, note: String(data.note || '').trim().slice(0, 120) };
 }
 export function validateBackup(raw) {
-  if (!raw || raw.version !== 1 || !Array.isArray(raw.periods) || raw.periods.length > 500) throw new Error('El archivo no es un respaldo válido de Pockets.');
+  if (!raw || raw.version !== 1 || !Array.isArray(raw.periods) || raw.periods.length > MAX_PERIODS) throw new Error('El archivo no es un respaldo válido de Pockets.');
   const ids = new Set();
   let open = 0;
+  let expenseCount = 0;
   const periods = raw.periods.map(p => {
-    if (!p || typeof p.id !== 'string' || p.id.length > 100 || ids.has(p.id) || typeof p.source !== 'string' || p.source.length > 80 || !validDate(p.date) || (p.closedAt !== null && (!validDate(p.closedAt) || p.closedAt < p.date)) || !Array.isArray(p.expenses) || p.expenses.length > 10000) throw new Error('El respaldo contiene registros inválidos.');
+    if (!p || !validId(p.id) || ids.has(p.id) || typeof p.income !== 'number' || typeof p.source !== 'string' || !p.source.trim() || p.source.length > 80 || !validDate(p.date) || (p.closedAt !== null && (!validDate(p.closedAt) || p.closedAt < p.date)) || !Array.isArray(p.expenses) || p.expenses.length > MAX_EXPENSES) throw new Error('El respaldo contiene registros inválidos.');
+    expenseCount += p.expenses.length;
+    if (expenseCount > MAX_EXPENSES) throw new Error('El respaldo supera el límite de 10 000 gastos.');
     ids.add(p.id);
     if (!p.closedAt) open++;
     const period = createPeriod(p.income, p.source, p.date, p.id);
     period.expenses = p.expenses.map(e => {
-      if (!e || typeof e.id !== 'string' || e.id.length > 100 || ids.has(e.id) || typeof e.note !== 'string' || e.note.length > 120 || (p.closedAt && e.date > p.closedAt)) throw new Error('El respaldo contiene gastos inválidos.');
+      if (!e || !validId(e.id) || ids.has(e.id) || typeof e.amount !== 'number' || typeof e.note !== 'string' || e.note.length > 120 || (p.closedAt && e.date > p.closedAt)) throw new Error('El respaldo contiene gastos inválidos.');
       ids.add(e.id);
       return addExpense(period, e, e.id);
     });

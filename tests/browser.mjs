@@ -7,9 +7,12 @@ await mkdir('qa', { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
 const page = await context.newPage();
+page.setDefaultTimeout(15000);
+page.setDefaultNavigationTimeout(15000);
+const baseURL = process.env.POCKETS_TEST_URL || 'http://127.0.0.1:5173/';
 const errors = [];
 page.on('pageerror', e => errors.push(e.message));
-await page.goto('http://127.0.0.1:5173/');
+await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
 await page.getByRole('heading', { name: 'Empecemos con tu ingreso' }).waitFor();
 await page.locator('[name="income"]').fill('300000');
 await page.locator('[name="source"]').fill('Salario');
@@ -82,7 +85,7 @@ const restored = await page.evaluate(() => JSON.parse(localStorage.getItem('colo
 assert.deepEqual(restored, saved);
 
 // Verify long reports paginate and long user copy cannot overflow the layout.
-await page.goto('http://127.0.0.1:5173/');
+await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
 const longPDF = await page.evaluate(async () => {
   const { createReport } = await import('/src/report.js');
   const records = JSON.parse(localStorage.getItem('colones.records.v1'));

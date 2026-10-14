@@ -8,14 +8,7 @@
     <meta name="description" content="Tus ingresos y gastos en colones, claros y en un solo lugar. Pockets: control de gastos, historial y reportes PDF." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Pockets · Tus gastos, claros</title>
-    <script>
-      try {
-        const storedTheme = localStorage.getItem('pockets.theme');
-        document.documentElement.dataset.theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      } catch {
-        document.documentElement.dataset.theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      }
-    </script>
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Saltar al contenido</a>

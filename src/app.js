@@ -3,8 +3,8 @@ import '@fontsource/dm-sans/latin-500.css';
 import '@fontsource/dm-sans/latin-600.css';
 import '@fontsource/dm-sans/latin-700.css';
 import './style.css';
-import { CATEGORIES, money, today, monthLabel, dateLabel, totals, createPeriod, addExpense, validateBackup, STORAGE_KEY } from './model.js';
-import { loadRecords, saveRecords } from './storage.js';
+import { CATEGORIES, money, today, monthLabel, dateLabel, totals, createPeriod, addExpense, validateBackup, STORAGE_KEY, MAX_BACKUP_BYTES } from './model.js';
+import { loadRecordState, saveRecords } from './storage.js';
 import { loadTheme, applyTheme, THEME_KEY } from './theme.js';
 
 const icons = {
@@ -26,8 +26,8 @@ const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const app = document.querySelector('#app');
 let theme = loadTheme();
 applyTheme(theme);
-let records, brokenStorage = false;
-try { records = loadRecords(); } catch { records = { version: 1, periods: [] }; brokenStorage = true; }
+let records, storedSnapshot, brokenStorage = false;
+try { const loaded = loadRecordState(); records = loaded.records; storedSnapshot = loaded.snapshot; } catch { records = { version: 1, periods: [] }; brokenStorage = true; }
 let view = 'overview', selectedId = null, expenseEditor = null, incomeEditor = false, toastTimer;
 const active = () => records.periods.find(p => !p.closedAt);
 const selected = () => records.periods.find(p => p.id === selectedId) || active();
@@ -35,10 +35,15 @@ function toast(message) {
   const el = document.querySelector('#toast'); el.textContent = message; el.classList.add('show');
   clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 6000);
 }
-function commit(next) {
+async function commit(next, expectedSnapshot = storedSnapshot) {
   if (brokenStorage) throw new Error('Primero descarga y revisa los datos locales desde Respaldos.');
-  try { saveRecords(next); } catch { throw new Error('No se pudo guardar. Revisa el espacio o los permisos del navegador; descarga un respaldo.'); }
-  records = next;
+  const save = () => {
+    const saved = saveRecords(next, expectedSnapshot);
+    records = saved.records; storedSnapshot = saved.snapshot;
+  };
+  // Serialize participating tabs, then reject a stale snapshot before writing.
+  if (navigator.locks) await navigator.locks.request('pockets-records', save);
+  else save();
 }
 const nav = () => `<nav class="navigation" aria-label="Principal">${[['overview', 'Mi registro', 'overview'], ['history', 'Historial', 'history'], ['backup', 'Respaldos', 'backup']].map(([id, label, glyph]) => `<button data-view="${id}" class="nav-item ${view === id ? 'active' : ''}" ${view === id ? 'aria-current="page"' : ''}>${icon(glyph)}<span>${label}</span></button>`).join('')}</nav>`;
 function render() {
@@ -141,22 +146,28 @@ function bind() {
     finally { b.disabled = false; }
   });
   document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openExpense(selected().expenses.find(e => e.id === b.dataset.edit)));
-  document.querySelectorAll('[data-delete]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('[data-delete]').forEach(b => b.onclick = async () => {
     if (!confirm('¿Eliminar este gasto? El saldo se actualizará.')) return;
-    try { const next = structuredClone(records); const p = next.periods.find(p => p.id === selected().id); if (p.closedAt) return; p.expenses = p.expenses.filter(e => e.id !== b.dataset.delete); commit(next); expenseEditor = null; render(); toast('Gasto eliminado.'); } catch (e) { toast(e.message); }
+    const expectedSnapshot = storedSnapshot;
+    try { const next = structuredClone(records); const p = next.periods.find(p => p.id === selected().id); if (p.closedAt) return; p.expenses = p.expenses.filter(e => e.id !== b.dataset.delete); await commit(next, expectedSnapshot); expenseEditor = null; render(); toast('Gasto eliminado.'); } catch (e) { toast(e.message); }
   });
-  document.querySelector('#expense-form')?.addEventListener('submit', e => {
+  document.querySelector('#expense-form')?.addEventListener('submit', async e => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const button = form.querySelector('[type="submit"]'); button.disabled = true;
+    const expectedSnapshot = storedSnapshot;
     try {
-      const data = Object.fromEntries(new FormData(e.currentTarget)); if (data.date > today()) throw new Error('La fecha no puede estar en el futuro.');
+      const data = Object.fromEntries(new FormData(form)); if (data.date > today()) throw new Error('La fecha no puede estar en el futuro.');
       const next = structuredClone(records); const p = next.periods.find(p => p.id === selected().id);
       const expense = addExpense(p, data, expenseEditor?.id || crypto.randomUUID());
       const index = p.expenses.findIndex(e => e.id === expense.id); if (index < 0) p.expenses.push(expense); else p.expenses[index] = expense;
-      commit(next); expenseEditor = null; render(); toast('Gasto guardado. Tu saldo está actualizado.');
-    } catch (err) { document.querySelector('#expense-error').textContent = err.message; }
+      await commit(next, expectedSnapshot); expenseEditor = null; render(); toast('Gasto guardado. Tu saldo está actualizado.');
+    } catch (err) { const error = document.querySelector('#expense-error'); if (error) error.textContent = err.message; else toast(err.message); }
+    finally { button.disabled = false; }
   });
   document.querySelector('#income-form')?.addEventListener('submit', async e => {
     e.preventDefault(); const form = e.currentTarget; const button = form.querySelector('[type="submit"]'); button.disabled = true;
+    const expectedSnapshot = storedSnapshot;
     try {
       const data = Object.fromEntries(new FormData(form)); if (data.date > today()) throw new Error('La fecha no puede estar en el futuro.');
       const next = structuredClone(records); const previous = next.periods.find(p => !p.closedAt);
@@ -168,7 +179,7 @@ function bind() {
       }
       // Generate the report before saving so PDF failures never close the record.
       let pdf; if (previous) { const { createReport } = await import('./report.js'); pdf = createReport(previous); }
-      next.periods.push(p); commit(next);
+      next.periods.push(p); await commit(next, expectedSnapshot);
       incomeEditor = false; selectedId = p.id; expenseEditor = null; render();
       if (pdf) pdf.save(`Pockets-${previous.date}-${previous.id.slice(0, 8)}.pdf`);
       toast(previous ? 'Nuevo registro creado. El informe anterior se descargó y quedó en el historial.' : 'Tu primer registro está listo. Agrega un gasto.');
@@ -182,14 +193,15 @@ function bind() {
   document.querySelector('[data-raw]')?.addEventListener('click', () => downloadJSON(localStorage.getItem(STORAGE_KEY) || '{}', `Pockets-datos-locales-${today()}.json`));
   document.querySelector('#import-file')?.addEventListener('change', async e => {
     try {
+      const expectedSnapshot = localStorage.getItem(STORAGE_KEY);
       const file = e.target.files[0]; if (!file) return;
-      if (file.size > 10000000) throw new Error('El archivo excede el límite de 10 MB.');
+      if (file.size > MAX_BACKUP_BYTES) throw new Error('El archivo excede el límite de 2 MB.');
       const next = validateBackup(JSON.parse(await file.text()));
       if (!confirm(`¿Restaurar ${next.periods.length} registros? Reemplazará tus datos actuales. Descarga primero un respaldo si necesitas conservarlos.`)) { e.target.value = ''; return; }
       const wasBroken = brokenStorage; brokenStorage = false;
-      try { commit(next); } catch (err) { brokenStorage = wasBroken; throw err; }
+      try { await commit(next, expectedSnapshot); } catch (err) { brokenStorage = wasBroken; throw err; }
       render(); toast('Respaldo restaurado correctamente.');
-    } catch (err) { document.querySelector('#backup-error').textContent = err instanceof SyntaxError ? 'No se pudo leer el archivo JSON. Selecciona un respaldo válido.' : err.message; e.target.value = ''; }
+    } catch (err) { const error = document.querySelector('#backup-error'); if (error) error.textContent = err instanceof SyntaxError ? 'No se pudo leer el archivo JSON. Selecciona un respaldo válido.' : err.message; else toast(err.message); e.target.value = ''; }
   });
 }
 window.addEventListener('storage', e => {
@@ -200,7 +212,7 @@ window.addEventListener('storage', e => {
     if (button) { button.innerHTML = icon(theme === 'dark' ? 'sun' : 'moon'); button.title = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'; }
   }
   if (e.key !== STORAGE_KEY && e.key !== null) return;
-  try { records = loadRecords(); brokenStorage = false; expenseEditor = null; incomeEditor = false; selectedId = null; render(); toast('Registros actualizados desde otra pestaña.'); }
+  try { const loaded = loadRecordState(); records = loaded.records; storedSnapshot = loaded.snapshot; brokenStorage = false; expenseEditor = null; incomeEditor = false; selectedId = null; render(); toast('Registros actualizados desde otra pestaña.'); }
   catch { brokenStorage = true; render(); }
 });
 render();
