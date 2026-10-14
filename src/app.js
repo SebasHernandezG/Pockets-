@@ -5,6 +5,7 @@ import '@fontsource/dm-sans/latin-700.css';
 import './style.css';
 import { CATEGORIES, money, today, monthLabel, dateLabel, totals, createPeriod, addExpense, validateBackup, STORAGE_KEY } from './model.js';
 import { loadRecords, saveRecords } from './storage.js';
+import { loadTheme, applyTheme, THEME_KEY } from './theme.js';
 
 const icons = {
   pocket: '<path d="M5 3h14v12c0 5-7 7-7 7s-7-2-7-7V3Z"/><path d="M5 9h14"/>',
@@ -17,10 +18,14 @@ const icons = {
   edit: '<path d="m15 4 5 5M4 20l5-1L21 7l-5-5L4 14Z"/>',
   trash: '<path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
+  moon: '<path d="M20.5 13.1A8.6 8.6 0 0 1 10.9 3.5a8.7 8.7 0 1 0 9.6 9.6Z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M5 19l1.4-1.4M17.6 6.4 19 5"/>',
 };
 const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.pocket}</svg>`;
 const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const app = document.querySelector('#app');
+let theme = loadTheme();
+applyTheme(theme);
 let records, brokenStorage = false;
 try { records = loadRecords(); } catch { records = { version: 1, periods: [] }; brokenStorage = true; }
 let view = 'overview', selectedId = null, expenseEditor = null, incomeEditor = false, toastTimer;
@@ -37,8 +42,8 @@ function commit(next) {
 }
 const nav = () => `<nav class="navigation" aria-label="Principal">${[['overview', 'Mi registro', 'overview'], ['history', 'Historial', 'history'], ['backup', 'Respaldos', 'backup']].map(([id, label, glyph]) => `<button data-view="${id}" class="nav-item ${view === id ? 'active' : ''}" ${view === id ? 'aria-current="page"' : ''}>${icon(glyph)}<span>${label}</span></button>`).join('')}</nav>`;
 function render() {
-  app.innerHTML = `<header class="app-header"><div class="header-inner"><a href="#" class="brand" aria-label="Pockets, inicio">${icon('pocket')}<span>pockets<span class="brand-dot">.</span></span></a>${nav()}<span class="currency-tag">CRC <span>· Colones</span></span></div></header>
-  <main id="main">${brokenStorage ? '<div class="notice danger" role="alert">No pudimos leer tus datos guardados. Los conservamos sin sobrescribirlos. Ve a Respaldos para descargarlos o restaurar una copia válida.</div>' : ''}${view === 'overview' ? overview() : view === 'history' ? history() : backup()}</main>
+  app.innerHTML = `<header class="app-header"><div class="header-inner"><a href="#" class="brand" aria-label="Pockets, inicio">${icon('pocket')}<span>pockets<span class="brand-dot">.</span></span></a>${nav()}<div class="header-actions"><span class="currency-tag">CRC <span>· Colones</span></span><button class="icon-button theme-toggle" data-theme-toggle aria-label="Modo oscuro" aria-pressed="${theme === 'dark'}" title="${theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}">${icon(theme === 'dark' ? 'sun' : 'moon')}</button></div></div></header>
+  <main id="main" tabindex="-1">${brokenStorage ? '<div class="notice danger" role="alert">No pudimos leer tus datos guardados. Los conservamos sin sobrescribirlos. Ve a Respaldos para descargarlos o restaurar una copia válida.</div>' : ''}${view === 'overview' ? overview() : view === 'history' ? history() : backup()}</main>
   <footer class="app-footer"><span>Tus cuentas claras. Un gasto a la vez.</span><span>Guardado en este navegador</span></footer>`;
   bind();
 }
@@ -100,7 +105,7 @@ function history() {
 function backup() {
   return `<div class="page-heading"><div><h1>Tus cuentas van contigo.</h1><p class="muted">Guarda una copia y restaura tus registros en otro navegador.</p></div></div><section class="backup-panel"><h2>Una copia de todo</h2><p>El respaldo incluye tus ingresos, gastos e historial. Descárgalo de vez en cuando para conservar tus registros.</p><button class="button primary" data-export>${icon('backup')}Descargar respaldo</button><hr><h2>Restaurar una copia</h2><p>Selecciona un respaldo de Pockets en formato JSON. Reemplazará los registros actuales después de tu confirmación.</p><label class="file-picker">Archivo de respaldo<input id="import-file" type="file" accept=".json,application/json"></label><p class="form-error" id="backup-error" role="alert"></p><hr><div class="storage-note">${icon('pocket')}<p>Los datos se guardan únicamente en este navegador. No se sincronizan entre dispositivos. Si borras los datos del navegador, necesitarás un respaldo para recuperarlos.</p></div>${brokenStorage ? '<button class="button outline" data-raw>Descargar datos locales sin procesar</button>' : ''}</section>`;
 }
-function go(next) { view = next; selectedId = null; expenseEditor = null; incomeEditor = false; render(); window.scrollTo({ top: 0 }); }
+function go(next) { view = next; selectedId = null; expenseEditor = null; incomeEditor = false; render(); document.querySelector('#main').focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
 function openExpense(data) {
   expenseEditor = data; render(); document.querySelector('#expense-editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
   document.querySelector('[name="amount"]').focus({ preventScroll: true });
@@ -113,6 +118,15 @@ function downloadJSON(data, name) {
   const a = document.createElement('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 function bind() {
+  document.querySelector('[data-theme-toggle]').onclick = e => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    const saved = applyTheme(theme, true);
+    const button = e.currentTarget;
+    button.setAttribute('aria-pressed', String(theme === 'dark'));
+    button.title = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+    button.innerHTML = icon(theme === 'dark' ? 'sun' : 'moon');
+    toast(`Modo ${theme === 'dark' ? 'oscuro' : 'claro'} activado.${saved ? '' : ' Tu navegador no permitió guardar esta preferencia.'}`);
+  };
   document.querySelector('.brand').onclick = e => { e.preventDefault(); go('overview'); };
   document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
   document.querySelector('[data-new-income]')?.addEventListener('click', () => { selectedId = null; incomeEditor = true; expenseEditor = null; render(); document.querySelector('[name="income"]').focus(); });
@@ -179,6 +193,12 @@ function bind() {
   });
 }
 window.addEventListener('storage', e => {
+  if (e.key === THEME_KEY || e.key === null) {
+    theme = loadTheme(); applyTheme(theme);
+    const button = document.querySelector('[data-theme-toggle]');
+    button?.setAttribute('aria-pressed', String(theme === 'dark'));
+    if (button) { button.innerHTML = icon(theme === 'dark' ? 'sun' : 'moon'); button.title = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'; }
+  }
   if (e.key !== STORAGE_KEY && e.key !== null) return;
   try { records = loadRecords(); brokenStorage = false; expenseEditor = null; incomeEditor = false; selectedId = null; render(); toast('Registros actualizados desde otra pestaña.'); }
   catch { brokenStorage = true; render(); }

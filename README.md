@@ -11,6 +11,7 @@ Una web sencilla para administrar ingresos y gastos en **colones costarricenses 
 - Al agregar un nuevo ingreso, cierra el anterior, descarga su PDF y conserva el historial.
 - El PDF incluye mes de inicio, rango de fechas, ingreso, gráfico circular, montos por categoría, cada gasto, total y saldo. Los informes largos tienen varias páginas.
 - Descarga y restaura respaldos JSON. Los registros cerrados se consultan sin modificarlos.
+- Modo claro y oscuro desde el botón de la luna/sol. Respeta la preferencia del sistema al comenzar y recuerda la elección en este navegador. El botón anuncia su estado con `aria-pressed` y funciona con Enter o Espacio.
 
 Cada ingreso inicia un período propio, aunque haya varios en el mismo mes. El saldo anterior **no se añade automáticamente** al nuevo ingreso. El PDF se identifica por el mes de inicio y muestra el rango completo de fechas.
 
@@ -30,6 +31,15 @@ npm test
 npm run build
 npm run preview
 ```
+
+## Publicar en Vercel
+
+El archivo `vercel.json` configura Vite, `npm ci`, `npm run build` y salida `dist`.
+
+1. En Vercel, elige **Add New → Project** y **Import** junto al repositorio `Pockets-`.
+2. Framework: **Vite**. Root Directory: **./** (la raíz del repositorio).
+3. Build Command: `npm run build`. Output Directory: `dist`. No necesita variables de entorno.
+4. Pulsa **Deploy**. Los siguientes cambios en `main` se desplegarán automáticamente.
 
 ## Publicar en Netlify
 
@@ -56,6 +66,7 @@ Si un registro local no puede leerse, la app lo conserva sin sobrescribirlo y pe
 
 - `src/model.js`: reglas, validación y cálculos, sin depender de la interfaz.
 - `src/storage.js`: adaptador de persistencia. Puede sustituirse por una API con autenticación.
+- `src/theme.js`: preferencia y persistencia del modo visual, independiente de los registros financieros.
 - `src/report.js`: generación de PDF, cargada únicamente cuando se necesita.
 - `src/app.js`: vistas y acciones.
 - `src/style.css`: interfaz responsive, foco accesible y movimiento reducido.

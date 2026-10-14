@@ -31,6 +31,32 @@ colors:
   deudas: "#c96653"
   servicios: "#8c7bb1"
   ropa: "#849254"
+  dark-background: "#131c18"
+  dark-surface: "#1d2923"
+  dark-green: "#bed3a8"
+  dark-green-hover: "#d1e2c0"
+  dark-text: "#e4ede5"
+  dark-muted: "#abb8ac"
+  dark-line: "#354337"
+  dark-hover: "#28392d"
+  dark-active: "#314435"
+  dark-subtle-hover: "#3c5240"
+  dark-primary-text: "#17231b"
+  dark-input: "#17231d"
+  dark-outline: "#728573"
+  dark-outline-hover: "#91aa8c"
+  dark-available: "#283e2f"
+  dark-available-text: "#b7cbb0"
+  dark-available-amount: "#d8e9cd"
+  dark-divider: "#98a895"
+  dark-status: "#314036"
+  dark-status-open-text: "#c6ddba"
+  dark-danger-background: "#402923"
+  dark-danger-text: "#ffb5a5"
+  dark-toast: "#c5d9b2"
+  dark-selection: "#456441"
+  dark-selection-text: "#f0f5eb"
+  dark-scrollbar: "#657b60"
 typography:
   headline:
     fontFamily: "DM Sans, sans-serif"
@@ -106,6 +132,18 @@ components:
     backgroundColor: "{colors.nav-active}"
     textColor: "{colors.green}"
     rounded: "{rounded.field}"
+  theme-toggle:
+    backgroundColor: "{colors.nav-hover}"
+    textColor: "{colors.green}"
+    rounded: "{rounded.field}"
+    width: "44px"
+    height: "44px"
+  theme-toggle-dark:
+    backgroundColor: "{colors.dark-active}"
+    textColor: "{colors.dark-green}"
+    rounded: "{rounded.field}"
+    width: "44px"
+    height: "44px"
   status:
     backgroundColor: "{colors.status}"
     textColor: "{colors.muted}"
@@ -147,6 +185,10 @@ El fondo claro cálido enmarca superficies blancas. El texto verde oscuro lleva 
 
 **The Category Context Rule.** Cada color de categoría se presenta con texto o una leyenda; las cantidades siguen disponibles en la lista.
 
+### Dark mode
+
+Los tokens con prefijo dark son la paleta normativa del modo oscuro aprobado. Se aplican con `data-theme="dark"` y `color-scheme: dark`: fondo verde casi negro, superficies verdes oscuras, texto claro y acciones verde claro. El texto de acciones principales se vuelve oscuro; campos y bordes reciben valores propios. Saldo, errores, etiquetas, foco y aviso de guardado conservan su jerarquía con variantes contrastadas. Los siete colores de categoría y la composición permanecen constantes.
+
 ## Typography
 
 DM Sans con fallback sans-serif; se sirve localmente mediante las hojas de pesos 400, 500, 600 y 700. Los pesos intermedios declarados en CSS forman parte del estilo observado y el navegador los resuelve con esas fuentes.
@@ -163,7 +205,7 @@ En móvil, el resumen distribuye ingreso y gastado en dos columnas, con saldo a 
 
 Las superficies se separan por tono, bordes suaves y una sombra ambiental discreta. La sombra compartida de secciones, resumen y listas es `0 6px 24px #203c3407`. El aviso de guardado usa `0 8px 30px #19362b29` para distinguirse como elemento temporal superpuesto.
 
-Las acciones cambian fondo y borde en .18s ease-out. El medidor cambia escala en .45s con cubic-bezier(.16, 1, .3, 1); el aviso de guardado cambia opacidad y desplazamiento en .2s ease-out. Se eliminan las transiciones y el desplazamiento suave cuando el usuario solicita movimiento reducido.
+Las acciones declaran transiciones de .18s ease-out; cuando el tema está aplicado, se limita transition-property a opacity, transform y border-color para evitar interpolar colores al cambiar de modo. El medidor cambia escala en .45s con cubic-bezier(.16, 1, .3, 1); el aviso de guardado cambia opacidad y desplazamiento en .2s ease-out. Se eliminan las transiciones y el desplazamiento suave cuando el usuario solicita movimiento reducido.
 
 ## Shapes
 
@@ -186,6 +228,12 @@ Campos blancos de 47px de alto, borde tenue y relleno de 11px 13px. El marcador 
 ### Navigation
 
 Tres destinos persistentes: Mi registro, Historial y Respaldos. Icono sobre rótulo en móvil; icono junto al rótulo desde 700px. El destino activo usa texto verde, fondo claro y peso 650, con aria-current. El hover usa un tinte claro.
+
+### Theme toggle
+
+El encabezado incluye un botón nativo de icono de 44px, con nombre accesible estable «Modo oscuro» y `aria-pressed` true en modo oscuro, false en claro. Enter y Espacio activan el botón. El icono muestra luna en claro y sol en oscuro; el título describe el modo de destino. El foco sigue el contorno visible del sistema; en oscuro usa dark-green-hover.
+
+La preferencia explícita se guarda como light o dark en `pockets.theme`. Sin valor válido, se usa la preferencia del sistema al cargar. Un script temprano en el encabezado aplica el tema antes de montar la interfaz para evitar un destello del modo incorrecto. Si el navegador bloquea el almacenamiento, el cambio sigue disponible y el mensaje de estado informa que no se guardó la preferencia.
 
 ### Status
 

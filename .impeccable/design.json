@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-14T06:52:48.125987+00:00",
+  "generatedAt": "2026-10-14T07:01:14.897144+00:00",
   "title": "Design System: Pockets",
   "extensions": {
     "colorMeta": {
@@ -409,6 +409,110 @@
           "oklch(83.57% 0.08689 119.35)",
           "oklch(95.00% 0.08689 119.35)"
         ]
+      },
+      "dark-background": {
+        "role": "neutral",
+        "displayName": "Dark background"
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Dark surface"
+      },
+      "dark-green": {
+        "role": "primary",
+        "displayName": "Dark green"
+      },
+      "dark-green-hover": {
+        "role": "primary",
+        "displayName": "Dark green hover"
+      },
+      "dark-text": {
+        "role": "neutral",
+        "displayName": "Dark text"
+      },
+      "dark-muted": {
+        "role": "neutral",
+        "displayName": "Dark muted"
+      },
+      "dark-line": {
+        "role": "neutral",
+        "displayName": "Dark line"
+      },
+      "dark-hover": {
+        "role": "neutral",
+        "displayName": "Dark hover"
+      },
+      "dark-active": {
+        "role": "neutral",
+        "displayName": "Dark active"
+      },
+      "dark-subtle-hover": {
+        "role": "neutral",
+        "displayName": "Dark subtle hover"
+      },
+      "dark-primary-text": {
+        "role": "neutral",
+        "displayName": "Dark primary text"
+      },
+      "dark-input": {
+        "role": "neutral",
+        "displayName": "Dark input"
+      },
+      "dark-outline": {
+        "role": "neutral",
+        "displayName": "Dark outline"
+      },
+      "dark-outline-hover": {
+        "role": "neutral",
+        "displayName": "Dark outline hover"
+      },
+      "dark-available": {
+        "role": "neutral",
+        "displayName": "Dark available"
+      },
+      "dark-available-text": {
+        "role": "neutral",
+        "displayName": "Dark available text"
+      },
+      "dark-available-amount": {
+        "role": "neutral",
+        "displayName": "Dark available amount"
+      },
+      "dark-divider": {
+        "role": "neutral",
+        "displayName": "Dark divider"
+      },
+      "dark-status": {
+        "role": "neutral",
+        "displayName": "Dark status"
+      },
+      "dark-status-open-text": {
+        "role": "neutral",
+        "displayName": "Dark status open text"
+      },
+      "dark-danger-background": {
+        "role": "neutral",
+        "displayName": "Dark danger background"
+      },
+      "dark-danger-text": {
+        "role": "neutral",
+        "displayName": "Dark danger text"
+      },
+      "dark-toast": {
+        "role": "neutral",
+        "displayName": "Dark toast"
+      },
+      "dark-selection": {
+        "role": "neutral",
+        "displayName": "Dark selection"
+      },
+      "dark-selection-text": {
+        "role": "neutral",
+        "displayName": "Dark selection text"
+      },
+      "dark-scrollbar": {
+        "role": "neutral",
+        "displayName": "Dark scrollbar"
       }
     },
     "typographyMeta": {
@@ -533,6 +637,14 @@
       "description": "Etiqueta informativa de historial; no es un control interactivo.",
       "html": "<span class=\"ds-status\">Cerrado</span> <span class=\"ds-status ds-open\">En curso</span>",
       "css": ".ds-status{font-family:'DM Sans',sans-serif;display:inline-block;background:#f0f2ed;color:var(--muted,#657168);font-size:.7rem;font-weight:550;padding:5px 9px;border-radius:6px;}.ds-status.ds-open{background:#e9f1df;color:#3d592e;}"
+    },
+    {
+      "name": "Modo oscuro",
+      "kind": "button",
+      "refersTo": "theme-toggle",
+      "description": "Botón nativo del encabezado. En la aplicación alterna el tema y aria-pressed; esta muestra representa el estado claro.",
+      "html": "<button class=\"ds-theme-toggle\" type=\"button\" aria-label=\"Modo oscuro\" aria-pressed=\"false\" title=\"Cambiar a modo oscuro\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20.5 13.1A8.6 8.6 0 0 1 10.9 3.5a8.7 8.7 0 1 0 9.6 9.6Z\"/></svg></button>",
+      "css": ".ds-theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;border-radius:8px;background:#f1f5ed;color:var(--green,#254d40);cursor:pointer;}.ds-theme-toggle svg{width:20px;height:20px;flex-shrink:0;}.ds-theme-toggle:hover{background:#eef4e9;}.ds-theme-toggle:focus-visible{outline:3px solid #8da99a;outline-offset:3px;}.ds-theme-toggle[aria-pressed=\"true\"]{background:#314435;color:#bed3a8;}.ds-theme-toggle[aria-pressed=\"true\"]:hover{background:#28392d;}.ds-theme-toggle[aria-pressed=\"true\"]:focus-visible{outline-color:#d1e2c0;}"
     }
   ],
   "narrative": {

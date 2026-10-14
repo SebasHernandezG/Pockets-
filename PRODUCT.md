@@ -14,7 +14,7 @@ Registrar el ingreso disponible y los gastos; calcular el total y el saldo para 
 Cada nuevo pago, beca u otro ingreso inicia un registro. El anterior se cierra y genera un PDF con mes, fechas, gráfico circular, gastos y totales.
 
 ## Capabilities and Constraints
-Transporte, gustos, comida, alquiler, deudas, servicios y ropa. Colones costarricenses. Mobile first. Proyecto listo para repositorio y Netlify.
+Transporte, gustos, comida, alquiler, deudas, servicios y ropa. Colones costarricenses. Mobile first. Proyecto listo para repositorio, Netlify y Vercel. Modo oscuro solicitado con control accesible, roles y estados ARIA apropiados.
 Primera versión sencilla aprobada: almacenamiento local sin cuentas; respaldos JSON descargables. No sincroniza entre dispositivos. Estructura separada para facilitar una futura sincronización.
 
 ## Stack
