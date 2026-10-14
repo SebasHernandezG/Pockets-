@@ -9,6 +9,7 @@ Una persona que quiere administrar su dinero en Costa Rica desde el celular.
 
 ## Product Purpose
 Registrar el ingreso disponible y los gastos; calcular el total y el saldo para cada período.
+El ingreso total del registro abierto puede editarse cuando llega más dinero a mitad del período, conservando sus gastos y fecha inicial.
 
 ## Operating Context
 Cada nuevo pago, beca u otro ingreso inicia un registro. El anterior se cierra y genera un PDF con mes, fechas, gráfico circular, gastos y totales.

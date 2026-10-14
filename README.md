@@ -8,6 +8,7 @@ Una web sencilla para administrar ingresos y gastos en **colones costarricenses 
 - Registra gastos de Transporte, Gustos, Comida, Alquiler, Deudas, Servicios y Ropa.
 - Calcula el total gastado, saldo disponible y distribución por categoría. Trabaja con céntimos para evitar errores al sumar decimales.
 - Permite editar o eliminar gastos del registro abierto.
+- **Editar ingreso** permite actualizar el total recibido del registro abierto sin borrar sus gastos ni comenzar otro período. Por ejemplo, si tenías ₡157 000 y recibiste ₡30 000 más, escribe ₡187 000 como nuevo total. El saldo y los PDF se recalculan con ese monto.
 - Al agregar un nuevo ingreso, cierra el anterior, descarga su PDF y conserva el historial.
 - El PDF incluye mes de inicio, rango de fechas, ingreso, gráfico circular, montos por categoría, cada gasto, total y saldo. Los informes largos tienen varias páginas.
 - Descarga y restaura respaldos JSON. Los registros cerrados se consultan sin modificarlos.

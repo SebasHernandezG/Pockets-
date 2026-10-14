@@ -44,6 +44,10 @@ export function addExpense(period, data, id = crypto.randomUUID()) {
   if (!validDate(data.date) || data.date < period.date) throw new Error('La fecha del gasto debe ser igual o posterior al inicio del registro.');
   return { id, category: data.category, amount: amount(data.amount), date: data.date, note: String(data.note || '').trim().slice(0, 120) };
 }
+export function updateIncome(period, value) {
+  if (period.closedAt) throw new Error('Este registro ya está cerrado.');
+  return { ...period, income: amount(value) };
+}
 export function validateBackup(raw) {
   if (!raw || raw.version !== 1 || !Array.isArray(raw.periods) || raw.periods.length > MAX_PERIODS) throw new Error('El archivo no es un respaldo válido de Pockets.');
   const ids = new Set();

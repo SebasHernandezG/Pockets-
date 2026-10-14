@@ -3,7 +3,7 @@ import '@fontsource/dm-sans/latin-500.css';
 import '@fontsource/dm-sans/latin-600.css';
 import '@fontsource/dm-sans/latin-700.css';
 import './style.css';
-import { CATEGORIES, money, today, monthLabel, dateLabel, totals, createPeriod, addExpense, validateBackup, STORAGE_KEY, MAX_BACKUP_BYTES } from './model.js';
+import { CATEGORIES, money, today, monthLabel, dateLabel, totals, createPeriod, addExpense, updateIncome, validateBackup, STORAGE_KEY, MAX_BACKUP_BYTES } from './model.js';
 import { loadRecordState, saveRecords } from './storage.js';
 import { loadTheme, applyTheme, THEME_KEY } from './theme.js';
 
@@ -28,7 +28,7 @@ let theme = loadTheme();
 applyTheme(theme);
 let records, storedSnapshot, brokenStorage = false;
 try { const loaded = loadRecordState(); records = loaded.records; storedSnapshot = loaded.snapshot; } catch { records = { version: 1, periods: [] }; brokenStorage = true; }
-let view = 'overview', selectedId = null, expenseEditor = null, incomeEditor = false, toastTimer;
+let view = 'overview', selectedId = null, expenseEditor = null, incomeEditor = false, incomeAmountEditor = false, toastTimer;
 const active = () => records.periods.find(p => !p.closedAt);
 const selected = () => records.periods.find(p => p.id === selectedId) || active();
 function toast(message) {
@@ -70,13 +70,17 @@ function emptyOverview() {
 }
 function periodOverview(p, closed) {
   const t = totals(p); const fraction = Math.min(100, t.spent / p.income * 100);
-  return `<section class="balance-strip" aria-label="Resumen del registro"><div class="balance-cell"><span>Ingreso recibido</span><strong>${money(p.income)}</strong><small>Desde el ${dateLabel(p.date)}</small></div><div class="balance-cell"><span>Total gastado</span><strong>${money(t.spent)}</strong><small>${p.expenses.length} ${p.expenses.length === 1 ? 'gasto registrado' : 'gastos registrados'}</small></div><div class="balance-cell available ${t.remaining < 0 ? 'negative' : ''}"><span>${t.remaining < 0 ? 'Saldo en negativo' : 'Te queda disponible'}</span><strong>${money(t.remaining)}</strong><small>${t.remaining < 0 ? 'Los gastos superaron tu ingreso' : 'Para lo que viene'}</small></div><div class="budget-meter" role="img" aria-label="${Math.round(fraction)} por ciento del ingreso gastado"><span style="transform:scaleX(${fraction / 100})"></span></div></section>
+  return `<section class="balance-strip" aria-label="Resumen del registro"><div class="balance-cell"><span>Ingreso recibido</span><strong>${money(p.income)}</strong><small>Desde el ${dateLabel(p.date)}</small>${!closed ? `<button class="income-edit-button" data-edit-income aria-expanded="${incomeAmountEditor}">${icon('edit')}Editar ingreso</button>` : ''}</div><div class="balance-cell"><span>Total gastado</span><strong>${money(t.spent)}</strong><small>${p.expenses.length} ${p.expenses.length === 1 ? 'gasto registrado' : 'gastos registrados'}</small></div><div class="balance-cell available ${t.remaining < 0 ? 'negative' : ''}"><span>${t.remaining < 0 ? 'Saldo en negativo' : 'Te queda disponible'}</span><strong>${money(t.remaining)}</strong><small>${t.remaining < 0 ? 'Los gastos superaron tu ingreso' : 'Para lo que viene'}</small></div><div class="budget-meter" role="img" aria-label="${Math.round(fraction)} por ciento del ingreso gastado"><span style="transform:scaleX(${fraction / 100})"></span></div></section>
+    ${incomeAmountEditor && !closed ? incomeAmountForm(p) : ''}
     ${closed ? `<div class="notice">${icon('check')}Registro cerrado el ${dateLabel(p.closedAt)}. Puedes consultar y descargar su informe.<button class="button subtle" data-pdf="${esc(p.id)}">${icon('backup')}Descargar PDF</button></div>` : t.remaining < 0 ? '<div class="notice danger">Has gastado más de lo recibido. El saldo negativo queda reflejado en tu informe.</div>' : ''}
     <div class="workspace"><section class="ledger" aria-labelledby="categories-title"><div class="section-heading"><h2 id="categories-title">¿En qué se va tu dinero?</h2>${!closed ? `<button class="button subtle" data-add>${icon('plus')}Agregar gasto</button>` : ''}</div>
       <div class="category-table"><div class="category-table-head"><span>Categoría</span><span>Gastado</span><span></span></div>${t.categories.map(c => `<div class="category-row"><span class="category-name"><i style="background:${c.color}"></i>${c.name}</span><strong>${money(c.amount)}</strong>${!closed ? `<button class="icon-button" data-category="${c.id}" aria-label="Agregar gasto de ${c.name}">${icon('plus')}</button>` : '<span></span>'}</div>`).join('')}<div class="category-total"><span>Total de gastos</span><strong>${money(t.spent)}</strong></div></div>
       ${expenseEditor && !closed ? expenseForm(p) : ''}</section>
     <aside class="distribution" aria-labelledby="chart-title"><h2 id="chart-title">Así se distribuyen</h2><p class="muted">Tus gastos por categoría</p>${pie(t)}<div class="chart-legend">${t.categories.filter(c => c.amount > 0).map(c => `<div><span><i style="background:${c.color}"></i>${c.name}</span><strong>${new Intl.NumberFormat('es-CR', { maximumFractionDigits: 1 }).format(c.amount / t.spent * 100)}%</strong></div>`).join('') || '<p class="muted">El gráfico aparecerá al agregar tu primer gasto.</p>'}</div><button class="button outline full" data-pdf="${esc(p.id)}">${icon('backup')}Descargar PDF</button></aside></div>
     ${expenseList(p, closed)}`;
+}
+function incomeAmountForm(p) {
+  return `<section class="form-section" id="income-adjustment" aria-labelledby="income-adjustment-title"><div class="section-heading"><h2 id="income-adjustment-title">Actualizar ingreso</h2><button class="icon-button" data-cancel-income-amount aria-label="Cancelar edición del ingreso">${icon('close')}</button></div><p class="muted" id="income-adjustment-help">Escribe el total de dinero recibido para este registro, incluyendo el ingreso adicional. Tus gastos y la fecha de inicio se conservan.</p><form id="income-amount-form"><label class="income-amount-field">Ingreso total del registro<span class="input-wrap"><span>₡</span><input name="incomeTotal" type="number" inputmode="decimal" step="0.01" min="0.01" max="999999999.99" value="${p.income}" aria-describedby="income-adjustment-help income-adjustment-error" required></span></label><p class="form-error" id="income-adjustment-error" role="alert"></p><button class="button primary" type="submit">${icon('check')}Guardar ingreso</button></form></section>`;
 }
 function pie(t) {
   if (!t.spent) return '<div class="empty-chart" role="img" aria-label="Todavía no hay gastos"><span>Sin gastos<br><small>Todo por organizar</small></span></div>';
@@ -110,9 +114,9 @@ function history() {
 function backup() {
   return `<div class="page-heading"><div><h1>Tus cuentas van contigo.</h1><p class="muted">Guarda una copia y restaura tus registros en otro navegador.</p></div></div><section class="backup-panel"><h2>Una copia de todo</h2><p>El respaldo incluye tus ingresos, gastos e historial. Descárgalo de vez en cuando para conservar tus registros.</p><button class="button primary" data-export>${icon('backup')}Descargar respaldo</button><hr><h2>Restaurar una copia</h2><p>Selecciona un respaldo de Pockets en formato JSON. Reemplazará los registros actuales después de tu confirmación.</p><label class="file-picker">Archivo de respaldo<input id="import-file" type="file" accept=".json,application/json"></label><p class="form-error" id="backup-error" role="alert"></p><hr><div class="storage-note">${icon('pocket')}<p>Los datos se guardan únicamente en este navegador. No se sincronizan entre dispositivos. Si borras los datos del navegador, necesitarás un respaldo para recuperarlos.</p></div>${brokenStorage ? '<button class="button outline" data-raw>Descargar datos locales sin procesar</button>' : ''}</section>`;
 }
-function go(next) { view = next; selectedId = null; expenseEditor = null; incomeEditor = false; render(); document.querySelector('#main').focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
+function go(next) { view = next; selectedId = null; expenseEditor = null; incomeEditor = false; incomeAmountEditor = false; render(); document.querySelector('#main').focus({ preventScroll: true }); window.scrollTo({ top: 0 }); }
 function openExpense(data) {
-  expenseEditor = data; render(); document.querySelector('#expense-editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  expenseEditor = data; incomeAmountEditor = false; render(); document.querySelector('#expense-editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
   document.querySelector('[name="amount"]').focus({ preventScroll: true });
 }
 async function report(p) {
@@ -134,12 +138,30 @@ function bind() {
   };
   document.querySelector('.brand').onclick = e => { e.preventDefault(); go('overview'); };
   document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
-  document.querySelector('[data-new-income]')?.addEventListener('click', () => { selectedId = null; incomeEditor = true; expenseEditor = null; render(); document.querySelector('[name="income"]').focus(); });
+  document.querySelector('[data-new-income]')?.addEventListener('click', () => { selectedId = null; incomeEditor = true; incomeAmountEditor = false; expenseEditor = null; render(); document.querySelector('[name="income"]').focus(); });
+  document.querySelector('[data-edit-income]')?.addEventListener('click', () => {
+    incomeAmountEditor = !incomeAmountEditor; incomeEditor = false; expenseEditor = null; render();
+    if (incomeAmountEditor) { const input = document.querySelector('[name="incomeTotal"]'); input.focus(); input.select(); }
+    else document.querySelector('[data-edit-income]').focus();
+  });
+  document.querySelector('[data-cancel-income-amount]')?.addEventListener('click', () => { incomeAmountEditor = false; render(); document.querySelector('[data-edit-income]').focus(); });
+  document.querySelector('#income-amount-form')?.addEventListener('submit', async e => {
+    e.preventDefault(); const form = e.currentTarget; const button = form.querySelector('[type="submit"]'); button.disabled = true;
+    const expectedSnapshot = storedSnapshot;
+    try {
+      const next = structuredClone(records); const index = next.periods.findIndex(period => period.id === selected()?.id);
+      if (index < 0) throw new Error('No se encontró el registro. Recarga la página.');
+      next.periods[index] = updateIncome(next.periods[index], new FormData(form).get('incomeTotal'));
+      await commit(next, expectedSnapshot); incomeAmountEditor = false; render(); document.querySelector('[data-edit-income]')?.focus();
+      toast('Ingreso actualizado. Conservamos tus gastos y recalculamos el saldo.');
+    } catch (err) { const error = document.querySelector('#income-adjustment-error'); if (error) error.textContent = err.message; else toast(err.message); }
+    finally { button.disabled = false; }
+  });
   document.querySelector('[data-cancel-income]')?.addEventListener('click', () => { incomeEditor = false; render(); });
   document.querySelectorAll('[data-category]').forEach(b => b.onclick = () => openExpense({ category: b.dataset.category }));
   document.querySelector('[data-add]')?.addEventListener('click', () => openExpense({ category: 'transporte' }));
   document.querySelector('[data-cancel-expense]')?.addEventListener('click', () => { expenseEditor = null; render(); });
-  document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { selectedId = b.dataset.open; view = 'overview'; render(); window.scrollTo({ top: 0 }); });
+  document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { selectedId = b.dataset.open; incomeAmountEditor = false; view = 'overview'; render(); window.scrollTo({ top: 0 }); });
   document.querySelectorAll('[data-pdf]').forEach(b => b.onclick = async () => {
     b.disabled = true;
     try { await report(records.periods.find(p => p.id === b.dataset.pdf)); toast('Informe PDF descargado.'); } catch { toast('No se pudo generar el PDF. Intenta de nuevo.'); }
@@ -212,7 +234,7 @@ window.addEventListener('storage', e => {
     if (button) { button.innerHTML = icon(theme === 'dark' ? 'sun' : 'moon'); button.title = theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'; }
   }
   if (e.key !== STORAGE_KEY && e.key !== null) return;
-  try { const loaded = loadRecordState(); records = loaded.records; storedSnapshot = loaded.snapshot; brokenStorage = false; expenseEditor = null; incomeEditor = false; selectedId = null; render(); toast('Registros actualizados desde otra pestaña.'); }
+  try { const loaded = loadRecordState(); records = loaded.records; storedSnapshot = loaded.snapshot; brokenStorage = false; expenseEditor = null; incomeEditor = false; incomeAmountEditor = false; selectedId = null; render(); toast('Registros actualizados desde otra pestaña.'); }
   catch { brokenStorage = true; render(); }
 });
 render();

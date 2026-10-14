@@ -156,6 +156,8 @@ components:
 
 # Design System: Pockets
 
+El resumen del registro abierto incluye «Editar ingreso», un botón de texto con icono y estado `aria-expanded`. Abre un formulario inline para modificar el ingreso total; la etiqueta y ayuda aclaran que se conserva el registro. El control mide al menos 44px de alto, usa los colores de acción de ambos temas y devuelve el foco al botón al cancelar o guardar. Los registros cerrados mantienen su presentación de solo lectura.
+
 ## Overview
 
 **Creative North Star: "Interfaz sencilla aprobada"**

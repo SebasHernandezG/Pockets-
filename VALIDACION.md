@@ -13,6 +13,7 @@ Se comprobó la interfaz construida con datos ficticios; la web comienza sin dat
 - Modo oscuro: teclado Enter/Espacio, foco conservado, `aria-pressed`, preferencia persistente, preferencia del sistema y encabezado a 320px.
 - Auditoría automatizada axe: sin violaciones en las vistas y formularios probados en claro y oscuro, reglas WCAG 2 A/AA y 2.1 AA. Se espera al final de las transiciones antes de medir.
 - Revisión de seguridad: cabeceras equivalentes en Vercel/Netlify y el paquete estático, scripts inline bloqueados, texto de respaldo malicioso escapado, PDF y tema bajo CSP, y guardado pendiente rechazado cuando otra pestaña modifica los datos. Resumen y límites en `REVISION_SEGURIDAD.md`.
+- Edición del ingreso: conserva el período, fecha y gastos; recalcula el saldo; persiste tras recargar y aparece en el PDF actualizado. El formulario móvil se verifica con axe; los períodos cerrados no muestran la acción.
 
 ## Repetir las verificaciones
 

@@ -1,6 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { amount, totals, createPeriod, addExpense, validateBackup, validDate } from '../src/model.js';
+import { amount, totals, createPeriod, addExpense, updateIncome, validateBackup, validDate } from '../src/model.js';
+
+test('editing income preserves the record and expenses, recalculates balance, and rejects closed records', () => {
+  const period = createPeriod(157000, 'Salario', '2026-10-01', 'income-edit');
+  period.expenses.push(addExpense(period, { category: 'comida', amount: 12000, date: '2026-10-02' }, 'expense-edit'));
+  const updated = updateIncome(period, '187000');
+  assert.equal(updated.income, 187000);
+  assert.equal(updated.id, period.id);
+  assert.equal(updated.date, period.date);
+  assert.deepEqual(updated.expenses, period.expenses);
+  assert.equal(totals(updated).remaining, 175000);
+  assert.equal(period.income, 157000);
+  assert.throws(() => updateIncome(period, 0));
+  assert.throws(() => updateIncome({ ...period, closedAt: '2026-10-03' }, 187000));
+});
 
 test('money uses cents: decimal sums and overspending stay accurate', () => {
   const period = createPeriod(100, 'Beca', '2026-10-01', 'period');
